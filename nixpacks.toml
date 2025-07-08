@@ -1,0 +1,20 @@
+# nixpacks.toml
+
+[env]
+NPM_CONFIG_PRODUCTION = "false"
+
+providers = ["node"]
+
+[phases.setup]
+# Keep default packages ("...") plus install nodejs (which includes npm)
+nixPkgs = ["...", "nodejs"]
+
+[phases.build]
+cmds = [
+  "npm install --include=dev",  # force install of devDependencies like Vite
+  "npm run build"               # then run your build
+]
+cacheDirectories = ["node_modules"]
+
+[start]
+cmd = "node dist/index.js"
