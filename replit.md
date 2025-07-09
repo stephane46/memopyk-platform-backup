@@ -205,6 +205,8 @@ Changelog:
 - July 09, 2025. POLICY ESTABLISHED: Never put server-needed build tools in devDependencies - production builds require them
 - July 09, 2025. EFFICIENCY PROTOCOLS: Established clear build verification steps to prevent repeated deployment failures
 - July 09, 2025. ROOT CAUSE: Multiple sequential mistakes from not verifying dependency changes before deployment
+- July 09, 2025. SOLUTION IMPLEMENTED: User added NPM_CONFIG_PRODUCTION=false environment variable in Coolify to force devDependencies installation
+- July 09, 2025. DEPLOYMENT IN PROGRESS: Container rebuilding with correct environment configuration to resolve vite/esbuild build failures
 ```
 
 ## TODO / Reminders
