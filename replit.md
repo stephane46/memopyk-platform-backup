@@ -193,6 +193,9 @@ Changelog:
 - July 08, 2025. INFRASTRUCTURE VERIFIED: Container running on port 3000, health endpoint responding, database connected, Traefik proxy working
 - July 08, 2025. 🎉 FINAL SUCCESS: Complete MEMOPYK platform live at new.memopyk.com after 2 weeks of deployment challenges
 - July 08, 2025. WEBSITE CONFIRMED: Bilingual interface, hero carousel, branding, all sections functional and professional
+- July 09, 2025. SESSION AUTHENTICATION ISSUE: Admin login works in preview but fails on production due to session persistence
+- July 09, 2025. DEPLOYMENT TROUBLESHOOTING: Multiple GitHub deployments with memorystore dependency and ES module fixes
+- July 09, 2025. SESSION PERSISTENCE FIX: Removed memorystore complexity, added explicit req.session.save() for production compatibility
 ```
 
 ## TODO / Reminders

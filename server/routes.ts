@@ -76,11 +76,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.session.cookie.maxAge = undefined;
         }
         
-        // Force session save and add logging for debugging
+        // Force session save for production compatibility
         req.session.save((err) => {
           if (err) {
-            console.error('Session save error:', err);
+            console.error("Session save error:", err);
+            return res.status(500).json({ message: "Session error" });
           }
+          
           console.log('LOGIN SUCCESS - Session ID:', req.sessionID, 'Authenticated:', (req.session as any).isAuthenticated);
           res.json({ success: true, sessionId: req.sessionID });
         });
