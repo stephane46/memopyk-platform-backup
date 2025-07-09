@@ -35,8 +35,11 @@ export default function Admin() {
     }
   }, []);
 
-  const { data: authStatus } = useQuery<{ isAuthenticated: boolean }>({
+  const { data: authStatus, refetch: refetchAuth } = useQuery<{ isAuthenticated: boolean }>({
     queryKey: ['/api/auth/status'],
+    retry: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 5000 // Check auth status every 5 seconds
   });
 
   const loginMutation = useMutation({
@@ -55,10 +58,16 @@ export default function Admin() {
       }
       
       toast({
-        title: "Connexion réussie",
+        title: "Connexion réussie", 
         description: "Bienvenue dans le panel d'administration MEMOPYK",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/status'] });
+      
+      // Force immediate auth status refresh
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/auth/status'] });
+        refetchAuth();
+      }, 100);
+      
       if (!rememberMe) {
         setPassword("");
       }
