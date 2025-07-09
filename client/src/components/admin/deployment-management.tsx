@@ -1,46 +1,48 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Server, Settings, AlertCircle, CheckCircle, Copy, Clock, History } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload, CheckCircle, Copy, Clock, History, AlertCircle, ExternalLink, RefreshCw, Settings } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
-interface DeploymentConfig {
-  host: string;
-  username: string;
-  deployPath: string;
+interface DeploymentEnvironment {
+  name: string;
   domain: string;
+  description: string;
+  isProduction: boolean;
 }
 
+const DEPLOYMENT_ENVIRONMENTS: DeploymentEnvironment[] = [
+  {
+    name: 'staging',
+    domain: 'new.memopyk.com',
+    description: 'Test environment for development and testing',
+    isProduction: false
+  },
+  {
+    name: 'production',
+    domain: 'memopyk.com',
+    description: 'Live production environment for customers',
+    isProduction: true
+  }
+];
+
 export function DeploymentManagement() {
-  const [config, setConfig] = useState<DeploymentConfig>({
-    host: '82.29.168.136',
-    username: 'root',
-    deployPath: '/var/www/memopyk',
-    domain: 'new.memopyk.com'
-  });
-  
-  // Production config for memopyk.com
-  const [prodConfig, setProdConfig] = useState<DeploymentConfig>({
-    host: '82.29.168.136',
-    username: 'root',
-    deployPath: '/var/www/memopyk-prod',
-    domain: 'memopyk.com'
-  });
-  
+  const [selectedEnvironment, setSelectedEnvironment] = useState<string>('staging');
   const [deploymentLogs, setDeploymentLogs] = useState<string[]>([]);
   const [deploymentProgress, setDeploymentProgress] = useState(0);
-  const [showConfig, setShowConfig] = useState(false);
   const [isDeploymentInProgress, setIsDeploymentInProgress] = useState(false);
   const [deploymentStartTime, setDeploymentStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [showBuildInfo, setShowBuildInfo] = useState(false);
   
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   // Update elapsed time every second during deployment
   useEffect(() => {
@@ -166,26 +168,32 @@ export function DeploymentManagement() {
   });
 
   const deployMutation = useMutation({
-    mutationFn: async () => {
-      setDeploymentLogs(['🚀 Starting MEMOPYK deployment via Coolify API...']);
+    mutationFn: async (environment: string) => {
+      const env = DEPLOYMENT_ENVIRONMENTS.find(e => e.name === environment);
+      if (!env) throw new Error('Invalid environment');
+
+      setDeploymentLogs([
+        t('Starting deployment to {domain}', { fr: `Démarrage du déploiement vers ${env.domain}`, en: `Starting deployment to ${env.domain}` }),
+        t('Build command: npm ci --include=dev && npm run build', { fr: 'Commande de build: npm ci --include=dev && npm run build', en: 'Build command: npm ci --include=dev && npm run build' })
+      ]);
       setDeploymentProgress(10);
       
       // Use the established Coolify API deployment process
-      const response = await apiRequest('POST', '/api/deploy/coolify');
+      const response = await apiRequest('POST', '/api/deploy/coolify', { environment: environment });
       const result = await response.json();
       
       if (!response.ok) {
         throw new Error(result.message || 'Deployment failed');
       }
       
-      setDeploymentLogs(prev => [...prev, '✅ Deployment triggered successfully']);
+      setDeploymentLogs(prev => [...prev, t('Deployment triggered successfully', { fr: 'Déploiement déclenché avec succès', en: 'Deployment triggered successfully' })]);
       setDeploymentProgress(25);
       
       // Monitor deployment progress
-      setDeploymentLogs(prev => [...prev, '📦 Building application from GitHub repository...']);
+      setDeploymentLogs(prev => [...prev, t('Building application from GitHub repository...', { fr: 'Construction de l\'application depuis le dépôt GitHub...', en: 'Building application from GitHub repository...' })]);
       setDeploymentProgress(50);
       
-      // Simulate monitoring the deployment status
+      // Monitor deployment status
       const monitorDeployment = async () => {
         let attempts = 0;
         const maxAttempts = 24; // 12 minutes max
@@ -196,13 +204,13 @@ export function DeploymentManagement() {
           
           try {
             // Check if site is responding
-            const siteCheck = await fetch('https://new.memopyk.com/api/health', { 
+            const siteCheck = await fetch(`https://${env.domain}/api/health`, { 
               method: 'HEAD',
               signal: AbortSignal.timeout(5000)
             });
             
             if (siteCheck.ok) {
-              setDeploymentLogs(prev => [...prev, '✅ Site is responding - deployment complete']);
+              setDeploymentLogs(prev => [...prev, t('Site is responding - deployment complete', { fr: 'Site répond - déploiement terminé', en: 'Site is responding - deployment complete' })]);
               setDeploymentProgress(100);
               return true;
             }
@@ -211,22 +219,24 @@ export function DeploymentManagement() {
           }
           
           if (attempts % 4 === 0) {
-            setDeploymentLogs(prev => [...prev, `⏳ Still building... (${attempts * 30}s elapsed)`]);
+            setDeploymentLogs(prev => [...prev, t('Still building... ({time}s elapsed)', { fr: `Toujours en construction... (${attempts * 30}s écoulées)`, en: `Still building... (${attempts * 30}s elapsed)` })]);
           }
           
           await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
         }
         
-        setDeploymentLogs(prev => [...prev, '⚠️ Deployment taking longer than expected - check Coolify dashboard']);
+        setDeploymentLogs(prev => [...prev, t('Deployment taking longer than expected - check Coolify dashboard', { fr: 'Déploiement plus long que prévu - vérifiez le tableau de bord Coolify', en: 'Deployment taking longer than expected - check Coolify dashboard' })]);
         return false;
       };
       
       const success = await monitorDeployment();
       
       if (success) {
-        setDeploymentLogs(prev => [...prev, '🎉 MEMOPYK platform deployed successfully!']);
-        setDeploymentLogs(prev => [...prev, '🔗 Access: https://new.memopyk.com']);
-        setDeploymentLogs(prev => [...prev, '🔐 Admin: https://new.memopyk.com/admin']);
+        setDeploymentLogs(prev => [...prev, 
+          t('MEMOPYK platform deployed successfully!', { fr: 'Plateforme MEMOPYK déployée avec succès!', en: 'MEMOPYK platform deployed successfully!' }),
+          t('Access: {domain}', { fr: `Accès: ${env.domain}`, en: `Access: ${env.domain}` }),
+          t('Admin: {domain}/admin', { fr: `Admin: ${env.domain}/admin`, en: `Admin: ${env.domain}/admin` })
+        ]);
       }
       
       return { success };
@@ -237,47 +247,32 @@ export function DeploymentManagement() {
       setDeploymentProgress(100);
       
       toast({
-        title: "Déploiement réussi",
-        description: "L'application a été déployée avec succès sur votre VPS",
+        title: t("Deployment successful", { fr: "Déploiement réussi", en: "Deployment successful" }),
+        description: t("Application deployed successfully", { fr: "L'application a été déployée avec succès", en: "Application deployed successfully" }),
       });
       
       // Refresh deployment status from server
       statusQuery.refetch();
+      historyQuery.refetch();
     },
     onError: (error: any) => {
       toast({
-        title: "Erreur de déploiement",
-        description: error.message || "Le déploiement a échoué. Vérifiez les logs pour plus de détails.",
+        title: t("Deployment error", { fr: "Erreur de déploiement", en: "Deployment error" }),
+        description: error.message || t("Deployment failed. Check logs for details.", { fr: "Le déploiement a échoué. Vérifiez les logs pour plus de détails.", en: "Deployment failed. Check logs for details." }),
         variant: "destructive",
       });
       setDeploymentProgress(0);
     }
   });
 
-  const testConnectionMutation = useMutation({
-    mutationFn: async (testConfig: DeploymentConfig) => {
-      const response = await apiRequest('POST', '/api/deploy/test', testConfig);
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Connexion réussie",
-        description: "La connexion au VPS a été établie avec succès",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Erreur de connexion",
-        description: "Impossible de se connecter au VPS. Vérifiez vos paramètres.",
-        variant: "destructive",
-      });
-    }
-  });
+  const getCurrentEnvironment = () => {
+    return DEPLOYMENT_ENVIRONMENTS.find(env => env.name === selectedEnvironment);
+  };
 
-  const handleDeploy = () => {
+  const handleDeploy = (environment: string) => {
     setDeploymentStartTime(new Date());
     setIsDeploymentInProgress(true);
-    deployMutation.mutate();
+    deployMutation.mutate(environment);
   };
 
   const copyLogsToClipboard = () => {
@@ -339,88 +334,114 @@ export function DeploymentManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-memopyk-navy">Déploiement VPS</h2>
+        <h2 className="text-2xl font-bold text-memopyk-navy">
+          {t("VPS Deployment", { fr: "Déploiement VPS", en: "VPS Deployment" })}
+        </h2>
         <Button
-          onClick={() => setShowConfig(!showConfig)}
+          onClick={() => setShowBuildInfo(!showBuildInfo)}
           variant="outline"
           className="border-memopyk-navy text-memopyk-navy"
         >
           <Settings className="h-4 w-4 mr-2" />
-          {showConfig ? 'Masquer la config' : 'Configuration'}
+          {showBuildInfo ? 
+            t("Hide Build Info", { fr: "Masquer les infos", en: "Hide Build Info" }) : 
+            t("Build Info", { fr: "Infos de build", en: "Build Info" })
+          }
         </Button>
       </div>
 
-      {showConfig && (
+      {/* Environment Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ExternalLink className="h-5 w-5" />
+            {t("Deployment Environment", { fr: "Environnement de déploiement", en: "Deployment Environment" })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={selectedEnvironment} onValueChange={setSelectedEnvironment}>
+            <TabsList className="grid w-full grid-cols-2">
+              {DEPLOYMENT_ENVIRONMENTS.map((env) => (
+                <TabsTrigger key={env.name} value={env.name} className="flex items-center gap-2">
+                  <Badge variant={env.isProduction ? "destructive" : "secondary"}>
+                    {env.isProduction ? "PROD" : "TEST"}
+                  </Badge>
+                  {env.domain}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            {DEPLOYMENT_ENVIRONMENTS.map((env) => (
+              <TabsContent key={env.name} value={env.name} className="mt-4">
+                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">{env.domain}</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`https://${env.domain}`, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      {t("Visit Site", { fr: "Voir le site", en: "Visit Site" })}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{env.description}</p>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Build Information */}
+      {showBuildInfo && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Server className="h-5 w-5" />
-              Configuration du serveur VPS
+              <Settings className="h-5 w-5" />
+              {t("Build Configuration", { fr: "Configuration de build", en: "Build Configuration" })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="host">Adresse IP du VPS *</Label>
-                <Input
-                  id="host"
-                  value={config.host}
-                  onChange={(e) => setConfig(prev => ({ ...prev, host: e.target.value }))}
-                  placeholder="82.29.168.136"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="username">Nom d'utilisateur SSH *</Label>
-                <Input
-                  id="username"
-                  value={config.username}
-                  onChange={(e) => setConfig(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="root"
-                  required
-                />
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="font-medium text-green-800 dark:text-green-200">
+                    {t("Current Build Status: Working", { fr: "Statut de build actuel: Fonctionnel", en: "Current Build Status: Working" })}
+                  </span>
+                </div>
+                <div className="text-sm space-y-1 text-green-700 dark:text-green-300">
+                  <p><strong>{t("Build Command", { fr: "Commande de build", en: "Build Command" })}:</strong> npm ci --include=dev && npm run build</p>
+                  <p><strong>{t("Environment Variable", { fr: "Variable d'environnement", en: "Environment Variable" })}:</strong> NPM_CONFIG_PRODUCTION=false</p>
+                  <p><strong>{t("Build Tools", { fr: "Outils de build", en: "Build Tools" })}:</strong> vite, esbuild, @vitejs/plugin-react</p>
+                  <p><strong>{t("Last Fixed", { fr: "Dernière correction", en: "Last Fixed" })}:</strong> {t("July 9, 2025", { fr: "9 juillet 2025", en: "July 9, 2025" })}</p>
+                </div>
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="deployPath">Chemin de déploiement</Label>
-                <Input
-                  id="deployPath"
-                  value={config.deployPath}
-                  onChange={(e) => setConfig(prev => ({ ...prev, deployPath: e.target.value }))}
-                  placeholder="/var/www/memopyk"
-                />
-              </div>
-              <div>
-                <Label htmlFor="domain">Domaine</Label>
-                <Input
-                  id="domain"
-                  value={config.domain}
-                  onChange={(e) => setConfig(prev => ({ ...prev, domain: e.target.value }))}
-                  placeholder="new.memopyk.com"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleTestConnection}
-                variant="outline"
-                disabled={testConnectionMutation.isPending}
-              >
-                {testConnectionMutation.isPending ? "Test en cours..." : "Tester la connexion"}
-              </Button>
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+                {t("Deployment Process", { fr: "Processus de déploiement", en: "Deployment Process" })}
+              </h4>
+              <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+                <li>{t("GitHub repository synchronization", { fr: "Synchronisation du dépôt GitHub", en: "GitHub repository synchronization" })}</li>
+                <li>{t("Install dependencies with devDependencies", { fr: "Installation des dépendances avec devDependencies", en: "Install dependencies with devDependencies" })}</li>
+                <li>{t("Frontend build with Vite", { fr: "Build frontend avec Vite", en: "Frontend build with Vite" })}</li>
+                <li>{t("Backend bundle with esbuild", { fr: "Bundle backend avec esbuild", en: "Backend bundle with esbuild" })}</li>
+                <li>{t("Container deployment and health checks", { fr: "Déploiement du container et vérifications", en: "Container deployment and health checks" })}</li>
+              </ol>
             </div>
           </CardContent>
         </Card>
       )}
 
+      {/* Quick Deployment */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Déploiement rapide
+            {t("Quick Deployment", { fr: "Déploiement rapide", en: "Quick Deployment" })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -429,11 +450,16 @@ export function DeploymentManagement() {
               <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <p className="font-medium text-blue-800 dark:text-blue-200 mb-1">
-                  Déploiement automatique vers {config.domain || 'new.memopyk.com'}
+                  {t("Automatic deployment to {domain}", { 
+                    fr: `Déploiement automatique vers ${getCurrentEnvironment()?.domain || 'new.memopyk.com'}`, 
+                    en: `Automatic deployment to ${getCurrentEnvironment()?.domain || 'new.memopyk.com'}` 
+                  })}
                 </p>
                 <p className="text-blue-600 dark:text-blue-300">
-                  Cette action va construire l'application, l'envoyer sur votre VPS et redémarrer le service.
-                  Assurez-vous que vos clés SSH sont configurées correctement.
+                  {t("This action will build the application via Coolify and deploy to your VPS with automatic health checks.", {
+                    fr: "Cette action va construire l'application via Coolify et la déployer sur votre VPS avec vérifications automatiques.",
+                    en: "This action will build the application via Coolify and deploy to your VPS with automatic health checks."
+                  })}
                 </p>
               </div>
             </div>
@@ -449,49 +475,27 @@ export function DeploymentManagement() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Button
-                onClick={() => {
-                  setDeploymentStartTime(new Date());
-                  setIsDeploymentInProgress(true);
-                  deployMutation.mutate();
-                }}
-                disabled={isDeploymentInProgress || deployMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {deployMutation.isPending || isDeploymentInProgress ? (
-                  "Déploiement en cours..."
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Déployer via Coolify API (new.memopyk.com)
-                  </>
-                )}
-              </Button>
-
-              <Button
-                onClick={() => window.open('https://new.memopyk.com', '_blank')}
-                variant="outline"
-                className="border-memopyk-highlight text-memopyk-highlight hover:bg-orange-50"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Voir le site déployé
-              </Button>
-            </div>
-            
+          <div className="space-y-3">
             <Button
-              onClick={handleNginxSetup}
-              disabled={isDeploymentInProgress || nginxSetupMutation.isPending || !config.host || !config.username || !config.domain}
-              variant="outline"
-              className="w-full border-green-600 text-green-700 hover:bg-green-50"
+              onClick={() => handleDeploy(selectedEnvironment)}
+              disabled={isDeploymentInProgress || deployMutation.isPending}
+              className={`w-full ${getCurrentEnvironment()?.isProduction ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
-              {nginxSetupMutation.isPending || isDeploymentInProgress ? (
-                "Configuration nginx en cours..."
+              {deployMutation.isPending || isDeploymentInProgress ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {t("Deployment in progress...", { fr: "Déploiement en cours...", en: "Deployment in progress..." })}
+                </>
               ) : (
                 <>
-                  <Server className="h-4 w-4 mr-2" />
-                  Configurer nginx & SSL
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t("Deploy to {environment}", { 
+                    fr: `Déployer vers ${getCurrentEnvironment()?.domain}`, 
+                    en: `Deploy to ${getCurrentEnvironment()?.domain}` 
+                  })}
+                  {getCurrentEnvironment()?.isProduction && (
+                    <Badge variant="destructive" className="ml-2">PROD</Badge>
+                  )}
                 </>
               )}
             </Button>
@@ -504,7 +508,7 @@ export function DeploymentManagement() {
                 className="w-full"
               >
                 <AlertCircle className="h-4 w-4 mr-2" />
-                Réinitialiser le déploiement
+                {t("Reset Deployment", { fr: "Réinitialiser le déploiement", en: "Reset Deployment" })}
               </Button>
             )}
           </div>
