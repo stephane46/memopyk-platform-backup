@@ -65,6 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(401).json({ message: "Invalid password" });
       }
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ message: "Login failed" });
     }
   });

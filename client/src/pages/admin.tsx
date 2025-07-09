@@ -43,7 +43,7 @@ export default function Admin() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (loginData: { password: string; rememberMe: boolean }) => {
+    mutationFn: async (loginData: { password: string }) => {
       const response = await apiRequest('POST', '/api/auth/login', loginData);
       return await response.json();
     },
@@ -51,15 +51,6 @@ export default function Admin() {
       // Save token to localStorage
       if (data.token) {
         localStorage.setItem('memopyk-admin-token', data.token);
-      }
-      
-      // Save password if remember me is checked
-      if (rememberMe) {
-        localStorage.setItem('memopyk_admin_password', password);
-        localStorage.setItem('memopyk_admin_remember', 'true');
-      } else {
-        localStorage.removeItem('memopyk_admin_password');
-        localStorage.setItem('memopyk_admin_remember', 'false');
       }
       
       toast({
@@ -73,9 +64,7 @@ export default function Admin() {
         refetchAuth();
       }, 100);
       
-      if (!rememberMe) {
-        setPassword("");
-      }
+      setPassword("");
     },
     onError: () => {
       toast({
@@ -109,7 +98,7 @@ export default function Admin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password) {
-      loginMutation.mutate({ password, rememberMe });
+      loginMutation.mutate({ password });
     }
   };
 
@@ -159,25 +148,7 @@ export default function Admin() {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => {
-                    const isChecked = !!checked;
-                    setRememberMe(isChecked);
-                    
-                    // If unchecking, remove saved data immediately
-                    if (!isChecked) {
-                      localStorage.removeItem('memopyk_admin_password');
-                      localStorage.setItem('memopyk_admin_remember', 'false');
-                    }
-                  }}
-                />
-                <Label htmlFor="remember" className="text-sm text-memopyk-navy">
-                  Se souvenir de moi
-                </Label>
-              </div>
+
               
               <Button 
                 type="submit" 

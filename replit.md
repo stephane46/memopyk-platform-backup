@@ -198,6 +198,8 @@ Changelog:
 - July 09, 2025. SESSION PERSISTENCE FIX: Removed memorystore complexity, added explicit req.session.save() for production compatibility
 - July 09, 2025. TOKEN AUTHENTICATION: Eliminated session/cookie complexity entirely with simple token-based auth system
 - July 09, 2025. PRODUCTION ARCHITECTURE: Server uses in-memory Set<string> for tokens, frontend uses localStorage with Bearer headers
+- July 09, 2025. SIMPLIFIED AUTH: Removed Remember Me functionality for cleaner token-based authentication
+- July 09, 2025. CLEAN DEPLOYMENT: Multiple forced deployments to ensure production container updates with token authentication
 ```
 
 ## TODO / Reminders
