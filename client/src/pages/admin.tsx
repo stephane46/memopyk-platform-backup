@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +15,7 @@ import { DeploymentManagement } from "@/components/admin/deployment-management";
 import { LegalManagement } from "@/components/admin/legal-management";
 import { TestsManagement } from "@/components/admin/tests-management";
 import { apiRequest } from "@/lib/queryClient";
-import { LogIn, LogOut, Video, Images, MessageCircle, Users, Upload, Eye, EyeOff, FileText, TestTube } from "lucide-react";
+import { LogIn, LogOut, Video, Images, MessageCircle, Users, Upload, Eye, EyeOff, FileText, TestTube, Globe } from "lucide-react";
 
 export default function Admin() {
   const [password, setPassword] = useState("");
@@ -22,6 +23,7 @@ export default function Admin() {
   const [rememberMe, setRememberMe] = useState(false);
   const [activeSection, setActiveSection] = useState("videos");
   const { toast } = useToast();
+  const { language, setLanguage, t } = useLanguage();
   const queryClient = useQueryClient();
 
   // Load saved password and remember me preference on component mount
@@ -54,8 +56,8 @@ export default function Admin() {
       }
       
       toast({
-        title: "Connexion réussie", 
-        description: "Bienvenue dans le panel d'administration MEMOPYK",
+        title: t("Login successful", { fr: "Connexion réussie", en: "Login successful" }), 
+        description: t("Welcome to MEMOPYK administration panel", { fr: "Bienvenue dans le panel d'administration MEMOPYK", en: "Welcome to MEMOPYK administration panel" }),
       });
       
       // Force immediate auth status refresh
@@ -68,8 +70,8 @@ export default function Admin() {
     },
     onError: () => {
       toast({
-        title: "Erreur de connexion",
-        description: "Mot de passe incorrect",
+        title: t("Connection error", { fr: "Erreur de connexion", en: "Connection error" }),
+        description: t("Incorrect password", { fr: "Mot de passe incorrect", en: "Incorrect password" }),
         variant: "destructive",
       });
     }
@@ -88,8 +90,8 @@ export default function Admin() {
       localStorage.removeItem('memopyk-admin-token');
       
       toast({
-        title: "Déconnexion réussie",
-        description: "À bientôt !",
+        title: t("Logout successful", { fr: "Déconnexion réussie", en: "Logout successful" }),
+        description: t("See you soon!", { fr: "À bientôt !", en: "See you soon!" }),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/status'] });
     }
@@ -114,13 +116,15 @@ export default function Admin() {
             <CardTitle className="font-playfair text-3xl font-bold text-memopyk-navy">
               MEMOPYK<sup className="text-xs">™</sup>
             </CardTitle>
-            <p className="text-memopyk-blue mt-2">Panel d'administration</p>
+            <p className="text-memopyk-blue mt-2">
+              {t("Administration Panel", { fr: "Panel d'administration", en: "Administration Panel" })}
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <Label htmlFor="password" className="text-memopyk-navy font-semibold">
-                  Mot de passe
+                  {t("Password", { fr: "Mot de passe", en: "Password" })}
                 </Label>
                 <div className="relative mt-2">
                   <Input
@@ -129,7 +133,7 @@ export default function Admin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10 focus:ring-memopyk-sky"
-                    placeholder="Entrez le mot de passe admin"
+                    placeholder={t("Enter admin password", { fr: "Entrez le mot de passe admin", en: "Enter admin password" })}
                     required
                   />
                   <Button
@@ -156,7 +160,10 @@ export default function Admin() {
                 disabled={loginMutation.isPending}
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                {loginMutation.isPending ? 'Connexion...' : 'Se connecter'}
+                {loginMutation.isPending ? 
+                  t("Connecting...", { fr: "Connexion...", en: "Connecting..." }) : 
+                  t("Login", { fr: "Se connecter", en: "Login" })
+                }
               </Button>
             </form>
           </CardContent>
@@ -166,13 +173,41 @@ export default function Admin() {
   }
 
   const menuItems = [
-    { id: "videos", label: "Vidéos Hero", icon: Video },
-    { id: "gallery", label: "Galerie", icon: Images },
-    { id: "faq", label: "FAQ", icon: MessageCircle },
-    { id: "contacts", label: "Contacts", icon: Users },
-    { id: "legal", label: "Documents Légaux", icon: FileText },
-    { id: "tests", label: "Tests", icon: TestTube },
-    { id: "deploy", label: "Déploiement", icon: Upload },
+    { 
+      id: "videos", 
+      label: t("Hero Videos", { fr: "Vidéos Hero", en: "Hero Videos" }), 
+      icon: Video 
+    },
+    { 
+      id: "gallery", 
+      label: t("Gallery", { fr: "Galerie", en: "Gallery" }), 
+      icon: Images 
+    },
+    { 
+      id: "faq", 
+      label: "FAQ", 
+      icon: MessageCircle 
+    },
+    { 
+      id: "contacts", 
+      label: t("Contacts", { fr: "Contacts", en: "Contacts" }), 
+      icon: Users 
+    },
+    { 
+      id: "legal", 
+      label: t("Legal Documents", { fr: "Documents Légaux", en: "Legal Documents" }), 
+      icon: FileText 
+    },
+    { 
+      id: "tests", 
+      label: t("Tests", { fr: "Tests", en: "Tests" }), 
+      icon: TestTube 
+    },
+    { 
+      id: "deploy", 
+      label: t("Deployment", { fr: "Déploiement", en: "Deployment" }), 
+      icon: Upload 
+    },
   ];
 
   const renderActiveContent = () => {
@@ -202,10 +237,41 @@ export default function Admin() {
       <div className="w-64 bg-memopyk-navy text-white flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-memopyk-blue">
-          <h1 className="font-playfair text-xl font-bold">
-            MEMOPYK<sup className="text-xs">™</sup>
-          </h1>
-          <p className="text-memopyk-cream text-sm mt-1">Panel d'administration</p>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="font-playfair text-xl font-bold">
+              MEMOPYK<sup className="text-xs">™</sup>
+            </h1>
+            
+            {/* Language Toggle */}
+            <div className="flex items-center space-x-2">
+              <Globe className="h-4 w-4 text-memopyk-cream" />
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  language === 'fr' 
+                    ? 'bg-memopyk-highlight text-white' 
+                    : 'text-memopyk-cream hover:bg-memopyk-blue'
+                }`}
+                title="Français"
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  language === 'en' 
+                    ? 'bg-memopyk-highlight text-white' 
+                    : 'text-memopyk-cream hover:bg-memopyk-blue'
+                }`}
+                title="English"
+              >
+                EN
+              </button>
+            </div>
+          </div>
+          <p className="text-memopyk-cream text-sm">
+            {t("Administration Panel", { fr: "Panel d'administration", en: "Administration Panel" })}
+          </p>
         </div>
         
         {/* Navigation Menu */}
@@ -240,11 +306,11 @@ export default function Admin() {
           <Button
             onClick={handleLogout}
             variant="outline"
-            className="w-full border-white text-white hover:bg-white hover:text-memopyk-navy"
+            className="w-full border-memopyk-cream text-memopyk-cream hover:bg-memopyk-cream hover:text-memopyk-navy transition-colors"
             disabled={logoutMutation.isPending}
           >
             <LogOut className="h-4 w-4 mr-2" />
-            Déconnexion
+            {t("Disconnect", { fr: "Déconnexion", en: "Disconnect" })}
           </Button>
         </div>
       </div>
