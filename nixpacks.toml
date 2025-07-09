@@ -1,6 +1,7 @@
 # nixpacks.toml
 
-[env]
+[phases.setup.environment]
+NODE_ENV = "development"
 NPM_CONFIG_PRODUCTION = "false"
 
 providers = ["node"]
