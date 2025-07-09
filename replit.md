@@ -200,6 +200,9 @@ Changelog:
 - July 09, 2025. PRODUCTION ARCHITECTURE: Server uses in-memory Set<string> for tokens, frontend uses localStorage with Bearer headers
 - July 09, 2025. SIMPLIFIED AUTH: Removed Remember Me functionality for cleaner token-based authentication
 - July 09, 2025. CLEAN DEPLOYMENT: Multiple forced deployments to ensure production container updates with token authentication
+- July 09, 2025. CRITICAL LESSON: Build regression caused by moving server-needed tools (vite, esbuild) to devDependencies
+- July 09, 2025. NIXPACKS FIX: Set NODE_ENV=development to ensure devDependencies install during build process
+- July 09, 2025. POLICY ESTABLISHED: Never put server-needed build tools in devDependencies - production builds require them
 ```
 
 ## TODO / Reminders
@@ -233,6 +236,7 @@ Changelog:
 Preferred communication style: Simple, everyday language.
 GitHub Access: Full access via GITHUB_TOKEN - never make excuses about git operations being blocked.
 Deployment Protocol: Always use selective file copying, never copy entire workspace to avoid Dockerfile/media contamination.
+Build Tools Policy: NEVER put server-needed tools in devDependencies - they must be in regular dependencies for production builds.
 ```
 
 ## GitHub Deployment Protocol
