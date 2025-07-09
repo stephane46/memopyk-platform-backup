@@ -239,13 +239,6 @@ Preferred communication style: Simple, everyday language.
 GitHub Access: Full access via GITHUB_TOKEN - never make excuses about git operations being blocked.
 Deployment Protocol: Always use selective file copying, never copy entire workspace to avoid Dockerfile/media contamination.
 Build Tools Policy: NEVER put server-needed tools in devDependencies - they must be in regular dependencies for production builds.
-
-CRITICAL BUILD PROTOCOLS (Established July 9, 2025):
-1. BEFORE making build changes: Test current production deployment first
-2. IF changing dependencies: Always use packager_tool, never edit package.json manually  
-3. IF build fails: Check package.json dependencies vs devDependencies immediately
-4. DEPLOYMENT RULE: If something was working, don't change the build process without clear necessity
-5. VERIFICATION: Always verify dependencies moved correctly before deploying
 ```
 
 ## GitHub Deployment Protocol

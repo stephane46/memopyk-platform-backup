@@ -135,3 +135,28 @@ async function deployToGitHub(commitMessage) {
 ```
 
 This procedure is now committed to memory and will be followed for all future GitHub deployments.
+
+## CRITICAL BUILD PROTOCOLS (Established July 9, 2025)
+
+### Pre-Deployment Verification
+1. **BEFORE making build changes**: Test current production deployment first
+2. **IF changing dependencies**: Always use packager_tool, never edit package.json manually  
+3. **IF build fails**: Check package.json dependencies vs devDependencies immediately
+4. **DEPLOYMENT RULE**: If something was working, don't change the build process without clear necessity
+5. **VERIFICATION**: Always verify dependencies moved correctly before deploying
+
+### Build Tools Management
+- **NEVER** put server-needed tools (vite, esbuild, @vitejs/plugin-react) in devDependencies
+- **ALWAYS** keep build tools in regular dependencies for production builds
+- **CHECK** nixpacks.toml has NODE_ENV=development if using devDependencies
+
+### Error Prevention
+- Test one change at a time, not multiple fixes simultaneously
+- Verify package.json structure before every deployment
+- If something was working yesterday, don't "improve" it without clear necessity
+
+### Files to ALWAYS Exclude
+- Dockerfile (conflicts with nixpacks.toml)
+- client/public/media (large files cause timeouts)
+- node_modules (never commit dependencies)
+- dist (never commit build outputs)
