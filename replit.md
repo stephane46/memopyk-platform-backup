@@ -207,6 +207,8 @@ Changelog:
 - July 09, 2025. ROOT CAUSE: Multiple sequential mistakes from not verifying dependency changes before deployment
 - July 09, 2025. SOLUTION IMPLEMENTED: User added NPM_CONFIG_PRODUCTION=false environment variable in Coolify to force devDependencies installation
 - July 09, 2025. DEPLOYMENT IN PROGRESS: Container rebuilding with correct environment configuration to resolve vite/esbuild build failures
+- July 09, 2025. FINAL SOLUTION: User updated Coolify build command from "npm run build" to "npm ci --include=dev && npm run build" 
+- July 09, 2025. DEPLOYMENT SUCCESS: Clean solution installs exact lockfile versions including devDependencies, then builds successfully
 ```
 
 ## TODO / Reminders
