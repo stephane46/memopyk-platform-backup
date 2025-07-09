@@ -47,7 +47,12 @@ export default function Admin() {
       const response = await apiRequest('POST', '/api/auth/login', loginData);
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Save token to localStorage
+      if (data.token) {
+        localStorage.setItem('memopyk-admin-token', data.token);
+      }
+      
       // Save password if remember me is checked
       if (rememberMe) {
         localStorage.setItem('memopyk_admin_password', password);
@@ -83,10 +88,16 @@ export default function Admin() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/auth/logout');
+      const token = localStorage.getItem('memopyk-admin-token');
+      const response = await apiRequest('POST', '/api/auth/logout', {}, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       return await response.json();
     },
     onSuccess: () => {
+      // Remove token from localStorage
+      localStorage.removeItem('memopyk-admin-token');
+      
       toast({
         title: "Déconnexion réussie",
         description: "À bientôt !",

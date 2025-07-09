@@ -14,9 +14,21 @@ export async function apiRequest(
 ): Promise<Response> {
   const isFormData = data instanceof FormData;
   
+  // Add authorization header if token exists
+  const token = localStorage.getItem('memopyk-admin-token');
+  const headers: Record<string, string> = {};
+  
+  if (data && !isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data && !isFormData ? { "Content-Type": "application/json" } : {},
+    headers,
     body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
     credentials: "include",
   });
@@ -31,7 +43,16 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Add authorization header if token exists
+    const token = localStorage.getItem('memopyk-admin-token');
+    const headers: Record<string, string> = {};
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
     const res = await fetch(queryKey[0] as string, {
+      headers,
       credentials: "include",
     });
 

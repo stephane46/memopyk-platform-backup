@@ -196,6 +196,8 @@ Changelog:
 - July 09, 2025. SESSION AUTHENTICATION ISSUE: Admin login works in preview but fails on production due to session persistence
 - July 09, 2025. DEPLOYMENT TROUBLESHOOTING: Multiple GitHub deployments with memorystore dependency and ES module fixes
 - July 09, 2025. SESSION PERSISTENCE FIX: Removed memorystore complexity, added explicit req.session.save() for production compatibility
+- July 09, 2025. TOKEN AUTHENTICATION: Eliminated session/cookie complexity entirely with simple token-based auth system
+- July 09, 2025. PRODUCTION ARCHITECTURE: Server uses in-memory Set<string> for tokens, frontend uses localStorage with Bearer headers
 ```
 
 ## TODO / Reminders

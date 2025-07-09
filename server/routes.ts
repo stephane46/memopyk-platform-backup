@@ -7,7 +7,7 @@ import {
   insertHeroVideoSchema, insertGalleryItemSchema, insertFaqSchema, 
   insertSeoSettingSchema, insertContactSchema 
 } from "@shared/schema";
-import session from "express-session";
+
 import { z } from "zod";
 import { NodeSSH } from 'node-ssh';
 import archiver from 'archiver';
@@ -21,19 +21,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (req, res) => {
     res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
   });
-  // Session configuration - SIMPLE MEMORY STORE
-  app.use(session({
-    secret: process.env.SESSION_SECRET || "memopyk-session-secret-2025",
-    resave: false,
-    saveUninitialized: false,
-    name: 'memopyk.sid',
-    cookie: { 
-      secure: false,
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
-    }
-  }));
+  // Simple token-based auth - no sessions
+  const ADMIN_TOKEN = "memopyk-admin-token-" + Date.now();
+  const validTokens = new Set<string>();
 
   // File upload middleware
   const upload = multer({
@@ -53,7 +43,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
-    if (!(req.session as any)?.isAuthenticated) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token || !validTokens.has(token)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
@@ -62,30 +53,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin authentication
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { password, rememberMe } = req.body;
+      const { password } = req.body;
       
       if (password === "memopyk2025admin") {
-        (req.session as any).isAuthenticated = true;
+        const token = "memopyk-" + Math.random().toString(36).substr(2, 15) + Date.now();
+        validTokens.add(token);
         
-        // Set session expiry based on remember me option
-        if (rememberMe) {
-          // Remember for 30 days
-          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-        } else {
-          // Session expires when browser closes (default behavior)
-          req.session.cookie.maxAge = undefined;
-        }
-        
-        // Force session save for production compatibility
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ message: "Session error" });
-          }
-          
-          console.log('LOGIN SUCCESS - Session ID:', req.sessionID, 'Authenticated:', (req.session as any).isAuthenticated);
-          res.json({ success: true, sessionId: req.sessionID });
-        });
+        console.log('LOGIN SUCCESS - Token generated:', token.substr(0, 10) + "...");
+        res.json({ success: true, token });
       } else {
         res.status(401).json({ message: "Invalid password" });
       }
@@ -95,13 +70,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy(() => {
-      res.json({ success: true });
-    });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token) {
+      validTokens.delete(token);
+    }
+    res.json({ success: true });
   });
 
   app.get("/api/auth/status", (req, res) => {
-    res.json({ isAuthenticated: !!(req.session as any)?.isAuthenticated });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    res.json({ isAuthenticated: !!(token && validTokens.has(token)) });
   });
 
   // Hero Videos routes
