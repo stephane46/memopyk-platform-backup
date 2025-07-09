@@ -235,10 +235,11 @@ Changelog:
 ## User Preferences
 
 ```
-Preferred communication style: Simple, everyday language.
+Communication Style: Simple, everyday language that matches the user's language. Avoid technical terms, as users are non-technical.
 GitHub Access: Full access via GITHUB_TOKEN - never make excuses about git operations being blocked.
 Deployment Protocol: Always use selective file copying, never copy entire workspace to avoid Dockerfile/media contamination.
 Build Tools Policy: NEVER put server-needed tools in devDependencies - they must be in regular dependencies for production builds.
+Efficiency Focus: Work independently for extended periods, only return with complete solutions or genuine blockers.
 ```
 
 ## GitHub Deployment Protocol
