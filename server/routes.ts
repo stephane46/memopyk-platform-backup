@@ -21,25 +21,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (req, res) => {
     res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
   });
-  // Session configuration - PERSISTENT STORE FOR PRODUCTION
-  const memorystore = await import('memorystore');
-  const MemoryStore = memorystore.default(session);
-  
+  // Session configuration - SIMPLE MEMORY STORE
   app.use(session({
     secret: process.env.SESSION_SECRET || "memopyk-session-secret-2025",
-    store: new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    }),
     resave: false,
     saveUninitialized: false,
     name: 'memopyk.sid',
     cookie: { 
-      secure: false, // Keep disabled for debugging
+      secure: false,
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax'
-    },
-    rolling: true // Extend session on each request
+    }
   }));
 
   // File upload middleware
