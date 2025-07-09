@@ -22,7 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
   });
   // Session configuration - PERSISTENT STORE FOR PRODUCTION
-  const MemoryStore = require('memorystore')(session);
+  const MemoryStore = (await import('memorystore')).default(session);
   
   app.use(session({
     secret: process.env.SESSION_SECRET || "memopyk-session-secret-2025",
