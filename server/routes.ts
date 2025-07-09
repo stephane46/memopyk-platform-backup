@@ -21,14 +21,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (req, res) => {
     res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
   });
-  // Session configuration
+  // Session configuration - PRODUCTION FIX
   app.use(session({
     secret: process.env.SESSION_SECRET || "memopyk-session-secret-2025",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force resave for production
+    saveUninitialized: true, // Allow initialization for production
+    name: 'memopyk.connect.sid',
     cookie: { 
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      secure: false, // Disable secure for testing, even in production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
     }
   }));
 
@@ -73,7 +76,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.session.cookie.maxAge = undefined;
         }
         
-        res.json({ success: true });
+        // Force session save and add logging for debugging
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+          }
+          console.log('LOGIN SUCCESS - Session ID:', req.sessionID, 'Authenticated:', (req.session as any).isAuthenticated);
+          res.json({ success: true, sessionId: req.sessionID });
+        });
       } else {
         res.status(401).json({ message: "Invalid password" });
       }
