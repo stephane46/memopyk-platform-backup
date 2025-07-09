@@ -12,7 +12,8 @@ nixPkgs = ["...", "nodejs"]
 [phases.build]
 cmds = [
   "npm install --include=dev",  # force install of devDependencies like Vite
-  "npm run build"               # then run your build
+  "npx vite build",             # build frontend first
+  "npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"  # then build backend
 ]
 cacheDirectories = ["node_modules"]
 
