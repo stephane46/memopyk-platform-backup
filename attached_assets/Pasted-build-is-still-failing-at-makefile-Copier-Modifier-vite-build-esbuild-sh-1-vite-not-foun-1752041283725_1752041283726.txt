@@ -1,0 +1,57 @@
+build is still failing at:
+
+makefile
+Copier
+Modifier
+> vite build && esbuild …
+sh: 1: vite: not found
+Even though you “moved” Vite (and Esbuild) into dependencies, npm in a production container is still only installing the regular deps—not the dev tools. Here’s what’s going on and how to fix it:
+
+Nixpacks / Docker install step
+By default, your deploy image runs something like npm install --omit=dev (or the older npm install --production), which skips over anything listed under devDependencies. Even if you put Vite in dependencies, some of its helpers (and your config) may still refer to dev-only bits that aren’t being pulled in.
+
+Why Vite isn’t available
+
+If you truly moved vite (and @vitejs/plugin-*, etc.) into "dependencies" in your package.json, check that the lockfile (package-lock.json or yarn.lock) was committed and updated. A stale lockfile can leave them out of the install.
+
+If you only moved some of the tools, you might still have other required libraries (like @vitejs/plugin-react or the ESBuild loader) hanging out in devDependencies, which aren’t installed.
+
+Two ways to resolve
+A. Keep Vite in devDependencies, but tell your build container to install them
+
+dockerfile
+Copier
+Modifier
+RUN npm install --include=dev
+or explicitly in your Nixpacks config add:
+
+toml
+Copier
+Modifier
+[phases.setup]
+build_cmd = "npm install --include=dev && npm run build"
+This makes sure Vite—and all dev-only tools—are present when you run npm run build.
+
+B. Move every build tool into dependencies (and commit your lockfile)
+
+json
+Copier
+Modifier
+"dependencies": {
+  "vite": "^4.x",
+  "esbuild": "^0.x",
+  "@vitejs/plugin-react": "^4.x",
+  // …etc
+},
+"devDependencies": {
+  // only testing, linting, formatting, etc.
+}
+Then rebuild, so that the production install step actually pulls in Vite.
+
+Best practice going forward
+
+Lockfile hygiene: Always commit your updated lockfile after changing deps.
+
+Clear separation: Keep only tools you need at runtime (e.g. server frameworks) in dependencies. Everything that’s only used during “npm run build” can sit in devDependencies, as long as you configure your CI or container to install them during the build phase.
+
+Once you choose one of those two approaches, your npm run build will find vite and complete successfully.
